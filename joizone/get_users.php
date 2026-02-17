@@ -1,20 +1,30 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+
+
 include 'db.php';
 
-$sql = "SELECT uid, userid, full_name, user_email, user_phone,
-        branch_name, department_name, shift_start, shift_end,branch_lat,branch_long,
-        status, createdAt
-        FROM users ORDER BY uid DESC";
-
+$sql = "SELECT * FROM users ORDER BY uid DESC";
 $res = mysqli_query($conn, $sql);
+
 $data = [];
 
-while ($row = mysqli_fetch_assoc($res)) {
-    $data[] = $row;
-}
+if ($res) {
+    while ($row = mysqli_fetch_assoc($res)) {
+        $data[] = $row;
+    }
 
-echo json_encode([
-    "status" => true,
-    "data" => $data
-]);
+    echo json_encode([
+        "status" => true,
+        "data" => $data
+    ]);
+} else {
+    echo json_encode([
+        "status" => false,
+        "message" => "Query failed"
+    ]);
+}
 ?>
