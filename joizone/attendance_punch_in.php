@@ -47,7 +47,7 @@ $check = mysqli_query($conn, $checkQuery);
 if (mysqli_num_rows($check) > 0) {
   echo json_encode([
     "status" => false,
-    "message" => "Already punched in today"
+    "message" => "Already punched in please punch out"
   ]);
   exit;
 }# 🚫 Check if user is on HOLIDAY today

@@ -28,34 +28,42 @@ $toDate   = $to   . " 23:59:59";
 
 $sql = "
 SELECT 
-    uid,
-    name,
-    department,
-    office_name,
+    a.uid,
+    a.name,
+    u.userid,
+    u.city_name,
+    a.department,
+    a.office_name,
 
     COUNT(*) AS total_days,
-    SUM(day_present) AS total_present,
-    SUM(day_absent) AS total_absent,
-    SUM(day_holiday) AS total_holiday,
-    SUM(day_autopunch) AS missed_punchOut,
+    SUM(a.day_present) AS total_present,
+    SUM(a.day_late) AS total_late,
+    SUM(a.day_halfday) AS total_halfday,
+    SUM(a.day_absent) AS total_absent,
+    SUM(a.day_holiday) AS total_holiday,
+    SUM(a.day_autopunch) AS missed_punchOut,
 
-    SUM(day_work_minutes) AS total_minutes,
-    ROUND(SUM(day_work_minutes) / 60, 2) AS total_hour,
-    SEC_TO_TIME(SUM(day_work_minutes) * 60) AS total_time_format,
+    SUM(a.day_work_minutes) AS total_minutes,
+    ROUND(SUM(a.day_work_minutes) / 60, 2) AS total_hour,
+    SEC_TO_TIME(SUM(a.day_work_minutes) * 60) AS total_time_format,
 
     ROUND(SUM(
         CASE 
-            WHEN day_work_minutes > 480 
-            THEN day_work_minutes - 480 
+            WHEN a.day_work_minutes > 480 
+            THEN a.day_work_minutes - 480 
             ELSE 0 
         END
     ) / 60, 2) AS overtime_hour,
 
-    SUM(gps_auto) AS total_gps_auto,
-    SUM(internet_auto) AS total_internet_auto,
-    SUM(outside_radius) AS total_outside_radius
+    SUM(a.gps_auto) AS total_gps_auto,
+    SUM(a.internet_auto) AS total_internet_auto,
+    SUM(a.outside_radius) AS total_outside_radius,
+
+    IFNULL(b.total_break_minutes,0) AS total_break_minutes,
+    SEC_TO_TIME(IFNULL(b.total_break_minutes,0) * 60) AS break_time_format
 
 FROM (
+
     SELECT 
         uid,
         name,
@@ -64,6 +72,8 @@ FROM (
         DATE(created_at) as att_date,
 
         MAX(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS day_present,
+        MAX(CASE WHEN late = 'Late' THEN 1 ELSE 0 END) AS day_late,
+        MAX(CASE WHEN late = 'Half Day' THEN 1 ELSE 0 END) AS day_halfday,
         MAX(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) AS day_absent,
         MAX(CASE WHEN status = 'HOLYDAY' THEN 1 ELSE 0 END) AS day_holiday,
         MAX(CASE WHEN status = 'AUTO_PUNCH_OUT' THEN 1 ELSE 0 END) AS day_autopunch,
@@ -94,10 +104,23 @@ FROM (
     WHERE created_at BETWEEN ? AND ?
     GROUP BY uid, DATE(created_at)
 
-) as daily_data
+) a
 
-GROUP BY uid, name, department, office_name
-ORDER BY name
+LEFT JOIN users u ON a.uid = u.uid
+
+LEFT JOIN (
+
+    SELECT 
+        uid,
+        SUM(duration_minutes) AS total_break_minutes
+    FROM attendance_breaks
+    WHERE created_at BETWEEN ? AND ?
+    GROUP BY uid
+
+) b ON a.uid = b.uid
+
+GROUP BY a.uid, a.name, a.department, a.office_name
+ORDER BY a.name
 ";
 
 $stmt = mysqli_prepare($conn, $sql);
@@ -111,7 +134,8 @@ if (!$stmt) {
     exit;
 }
 
-mysqli_stmt_bind_param($stmt, "ss", $fromDate, $toDate);
+mysqli_stmt_bind_param($stmt, "ssss", $fromDate, $toDate, $fromDate, $toDate);
+
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
@@ -120,24 +144,38 @@ $data = [];
 while ($row = mysqli_fetch_assoc($result)) {
 
     $data[] = [
-        "uid"                   => (int)$row['uid'],
-        "name"                  => $row['name'],
-        "department"            => $row['department'],
-        "office_name"           => $row['office_name'],
-        "total_days"            => (int)$row['total_days'],
-        "total_present"         => (int)$row['total_present'],
-        "total_absent"          => (int)$row['total_absent'],
-        "total_holiday"         => (int)$row['total_holiday'],
-        "missed_punchOut"       => (int)$row['missed_punchOut'],
-        "total_minutes"         => (int)$row['total_minutes'],
-        "total_hour"            => (int)$row['total_minutes'],//(float)$row['total_hour'],
-        "total_time_format"     => $row['total_time_format'],
-        "overtime_hour"         => (float)$row['overtime_hour'],
-        "gps_auto_count"        => (int)$row['total_gps_auto'],
-        "internet_auto_count"   => (int)$row['total_internet_auto'],
-        "outside_radius_count"  => (int)$row['total_outside_radius'],
-        "from_date"             => $from,
-        "to_date"               => $to
+
+        "uid" => (int)$row['uid'],
+        "name" => $row['name'],
+        "userid" => $row['userid'],
+"city_name" => $row['city_name'],
+        "department" => $row['department'],
+        "office_name" => $row['office_name'],
+
+        "total_days" => (int)$row['total_days'],
+        "total_present" => (int)$row['total_present'],
+        "total_late" => (int)$row['total_late'],
+        "total_halfday" => (int)$row['total_halfday'],
+        "total_absent" => (int)$row['total_absent'],
+        "total_holiday" => (int)$row['total_holiday'],
+
+        "missed_punchOut" => (int)$row['missed_punchOut'],
+
+        "total_minutes" => (int)$row['total_minutes'],
+        "total_hour" => (float)$row['total_hour'],
+        "total_time_format" => $row['total_time_format'],
+
+        "total_break_minutes" => (int)$row['total_break_minutes'],
+        "break_time_format" => $row['break_time_format'],
+
+        "overtime_hour" => (float)$row['overtime_hour'],
+
+        "gps_auto_count" => (int)$row['total_gps_auto'],
+        "internet_auto_count" => (int)$row['total_internet_auto'],
+        "outside_radius_count" => (int)$row['total_outside_radius'],
+
+        "from_date" => $from,
+        "to_date" => $to
     ];
 }
 
@@ -145,7 +183,7 @@ echo json_encode([
     "status" => true,
     "range" => [
         "from" => $from,
-        "to"   => $to
+        "to" => $to
     ],
     "total_users" => count($data),
     "data" => $data

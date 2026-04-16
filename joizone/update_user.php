@@ -5,6 +5,8 @@ header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
 include 'db.php';
+mysqli_query($conn, "SET time_zone = '+05:30'");
+date_default_timezone_set('Asia/Kolkata');
 
 // Get all fields from POST
 $uid = $_POST['uid'] ?? '';
@@ -15,6 +17,9 @@ $user_token = $_POST['user_token'] ?? '';
 $user_img = $_POST['user_img'] ?? '';
 $imei_no = $_POST['imei_no'] ?? '';
 $full_name = $_POST['full_name'] ?? '';
+$city_name = $_POST['city_name'] ?? '';
+$district_name = $_POST['district_name'] ?? '';
+$pin_code = $_POST['pin_code'] ?? '';
 $user_email = $_POST['user_email'] ?? '';
 $user_phone = $_POST['user_phone'] ?? '';
 $gender = $_POST['gender'] ?? '';
@@ -30,9 +35,10 @@ $shift_id = $_POST['shift_id'] ?? '';
 $shift_start = $_POST['shift_start'] ?? '';
 $shift_end = $_POST['shift_end'] ?? '';
 $date_of_joining = $_POST['date_of_joining'] ?? '';
+$last_working_date = $_POST['last_working_date'] ?? '';
 $status = $_POST['status'] ?? '';
 $role = $_POST['role'] ?? '';
-$createdAt = $_POST['createdAt'] ?? '';
+
 $updatedAt = date("Y-m-d H:i:s"); // update timestamp automatically
 
 if ($uid == '') {
@@ -49,6 +55,9 @@ $sql = "UPDATE users SET
         user_img='$user_img',
         imei_no='$imei_no',
         full_name='$full_name',
+        city_name='$city_name',
+        district_name='$district_name',
+        pin_code='$pin_code',
         user_email='$user_email',
         user_phone='$user_phone',
         gender='$gender',
@@ -64,9 +73,10 @@ $sql = "UPDATE users SET
         shift_start='$shift_start',
         shift_end='$shift_end',
         date_of_joining='$date_of_joining',
+        last_working_date='$last_working_date',
         status='$status',
         role='$role',
-        createdAt='$createdAt',
+
         updatedAt='$updatedAt'
         WHERE uid='$uid'";
 

@@ -8,7 +8,10 @@ header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
 include "db.php";
+mysqli_query($conn, "SET time_zone = '+05:30'");
+date_default_timezone_set('Asia/Kolkata');
 
+$createdAt = date("Y-m-d H:i:s");
 $attendance_id = $_POST['attendance_id'] ?? '';
 $status = $_POST['status'] ?? 'active';
 $lat = $_POST['lat'] ?? null;
@@ -42,8 +45,8 @@ if ($lat == '' || $lng == '') {
 }
 
 mysqli_query($conn, "
-  INSERT INTO attendance_locations (attendance_id, latitude, longitude)
-  VALUES ('$attendance_id','$lat','$lng')
+  INSERT INTO attendance_locations (attendance_id, latitude, longitude,created_at)
+  VALUES ('$attendance_id','$lat','$lng','$createdAt')
 ");
 
 echo json_encode(["status"=>true,"message"=>"Location saved"]);

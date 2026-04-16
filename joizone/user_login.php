@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $userid  = $_POST['userid'] ?? '';
 $password = $_POST['password'] ?? '';
 $imei_no = $_POST['imei_no'] ?? ''; // Android device ID
+$user_token = $_POST['user_token'] ?? '';
 
 if ($userid == "" || $password == "" || $imei_no == "") {
     echo json_encode([
@@ -37,7 +38,7 @@ if ($result->num_rows == 1) {
         if ($user['imei_no'] == "" || $user['imei_no'] == $imei_no) {
             // First time login or same device, update imei_no if empty
             if ($user['imei_no'] == "") {
-                $update_sql = "UPDATE users SET imei_no='$imei_no' WHERE uid='".$user['uid']."'";
+                $update_sql = "UPDATE users SET imei_no='$imei_no',user_token='$user_token WHERE uid='".$user['uid']."'";
                 $conn->query($update_sql);
             }
 

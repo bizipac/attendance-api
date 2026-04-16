@@ -24,24 +24,35 @@ if ($cid === '' || $from === '' || $to === '') {
 }
 
 $sql = "
-SELECT a.*, totals.total_working_minutes
+SELECT a.*, 
+       u.userid AS user_userid,
+        u.city_name AS user_city,
+       totals.total_working_minutes
 FROM attendance a
-JOIN (
+
+LEFT JOIN users u ON a.uid = u.uid
+
+INNER JOIN (
     SELECT 
         uid,
-        SUM(IFNULL(working_minutes,0)) as total_working_minutes,
-        MAX(created_at) as last_created
+        DATE(created_at) as att_date,
+        MAX(created_at) as last_created,
+        SUM(IFNULL(working_minutes,0)) as total_working_minutes
     FROM attendance
     WHERE cid = ?
     AND DATE(created_at) BETWEEN ? AND ?
-    GROUP BY uid
-) totals 
-ON a.uid = totals.uid 
+    GROUP BY uid, DATE(created_at)
+) totals
+ON a.uid = totals.uid
+AND DATE(a.created_at) = totals.att_date
 AND a.created_at = totals.last_created
+
 WHERE a.cid = ?
 AND DATE(a.created_at) BETWEEN ? AND ?
+
 ORDER BY a.created_at DESC
 ";
+
 
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, "ississ", $cid, $from, $to, $cid, $from, $to);
@@ -61,6 +72,8 @@ while ($row = mysqli_fetch_assoc($result)) {
     $data[] = [
         "id" => $row['id'],
         "uid" => $row['uid'],
+       "userid" => $row['user_userid'] ?? "",
+        "city_name" => $row['user_city'] ?? "",
         "name" => $row['name'],
         "department" => $row['department'],
         "office_name" => $row['office_name'],
