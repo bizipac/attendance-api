@@ -1,13 +1,13 @@
 <?php
 error_reporting(0);
-date_default_timezone_set('Asia/Kolkata'); // ✅ ADD THIS LINE
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 include 'db.php';
-
+mysqli_query($conn, "SET time_zone = '+05:30'");
+date_default_timezone_set('Asia/Kolkata');
 $data = json_decode(file_get_contents("php://input"), true);
 
 // Required fields
@@ -42,8 +42,10 @@ $gps_location = $data['gps_location'];
 $kiosk_name = $data['kiosk_name'];
 $image_urls = $data['image_urls']; // array
 
-$report_date = date("Y-m-d");
-$report_time = date("H:i:s");
+$now = new DateTime("now", new DateTimeZone("Asia/Kolkata"));
+
+$report_date = $now->format("Y-m-d");
+$report_time = $now->format("H:i:s");
 
 $conn->begin_transaction();
 

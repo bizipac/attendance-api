@@ -13,7 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include 'db.php';
-
+// ✅ Indian Timezone
+mysqli_query($conn, "SET time_zone = '+05:30'");
+date_default_timezone_set('Asia/Kolkata');
 /* ================= GET DATA ================= */
 
 $cid = $_POST['cid'] ?? '';
@@ -22,6 +24,14 @@ $password = $_POST['password'] ?? '';
 $user_token = $_POST['user_token'] ?? '';
 $user_img = $_POST['user_img'] ?? '';
 $full_name = $_POST['full_name'] ?? '';
+
+$middle_name = $_POST['middle_name'] ?? '';
+$last_name = $_POST['last_name'] ?? '';
+$city_name = $_POST['city_name'] ?? '';
+$district_name = $_POST['district_name'] ?? '';
+$pin_code = $_POST['pin_code'] ?? '';
+$reporting_position = $_POST['reporting_position'] ?? '';
+
 $user_email = $_POST['user_email'] ?? '';
 $user_phone = $_POST['user_phone'] ?? '';
 $gender = $_POST['gender'] ?? '';
@@ -42,7 +52,8 @@ $shift_end = $_POST['shift_end'] ?? '';
 
 $date_of_joining = $_POST['date_of_joining'] ?? '';
 $imei_no = $_POST['imei_no'] ?? '';
-
+$createdAt = date("Y-m-d H:i:s");
+$updatedAt = date("Y-m-d H:i:s");
 /* ================= VALIDATION ================= */
 
 if ($cid == '' || $userid == '' || $password == '' || $full_name == '') {
@@ -53,23 +64,35 @@ if ($cid == '' || $userid == '' || $password == '' || $full_name == '') {
     exit;
 }
 
+if ($userid != '') {
+    $checkQuery = "SELECT userid FROM users WHERE userid = '$userid'";
+    $result = mysqli_query($conn, $checkQuery);
+
+    if (mysqli_num_rows($result) > 0) {
+        echo json_encode([
+            "status" => false,
+            "message" => "❌ User ID already exists"
+        ]);
+        exit;
+    }
+}
 /* ================= INSERT ================= */
 
 // ⚠️ For now simple query (later we can secure it)
 $sql = "INSERT INTO users (
     cid, userid, password, user_token, user_img, imei_no,
-    full_name, user_email, user_phone, gender, full_address,
+    full_name, last_name, middle_name, city_name, pin_code, district_name, reporting_position, user_email, user_phone, gender, full_address,
     branch_id, branch_name, branch_distance, branch_lat, branch_long,
     department_id, department_name,
     shift_id, shift_start, shift_end,
-    date_of_joining
+    date_of_joining,createdAt, updatedAt
 ) VALUES (
     '$cid','$userid','$password','$user_token','$user_img','$imei_no',
-    '$full_name','$user_email','$user_phone','$gender','$full_address',
+    '$full_name','$last_name','$middle_name','$city_name','$pin_code','$district_name','$reporting_position','$user_email','$user_phone','$gender','$full_address',
     '$branch_id','$branch_name','$branch_distance','$branch_lat','$branch_long',
     '$department_id','$department_name',
     '$shift_id','$shift_start','$shift_end',
-    '$date_of_joining'
+    '$date_of_joining','$createdAt','$updatedAt'
 )";
 
 if (mysqli_query($conn, $sql)) {

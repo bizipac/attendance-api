@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Watermark Full</title>
+
+    <style>
+        #previewBox {
+            width: 300px;
+            height: 300px;
+            border: 2px dashed #ccc;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        #watermark {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 12px;
+            padding: 6px;
+            text-align: left;
+            line-height: 1.4;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<input type="file" accept="image/*" onchange="previewImage(event)">
+
+<br><br>
+
+<div id="previewBox">
+    <img id="preview">
+    <div id="watermark">Loading...</div>
+</div>
+
+<script>
+function previewImage(event) {
+    const file = event.target.files[0];
+
+    if (file) {
+        const img = document.getElementById('preview');
+        const watermark = document.getElementById('watermark');
+
+        // 👤 USER NAME (yaha change kar sakte ho dynamic bhi)
+        const userName = "Shubham Gupta";
+
+        // 🕒 Current Date & Time
+        const now = new Date();
+        const dateTime = now.toLocaleString();
+
+        // Show image
+        img.src = URL.createObjectURL(file);
+        img.style.display = "block";
+
+        // Show watermark
+        watermark.style.display = "block";
+        watermark.innerText = "Fetching location...";
+
+        // Get Location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
+
+                    watermark.innerHTML = `
+                        👤 Name: ${userName} <br>
+                        📅 Date: ${dateTime} <br>
+                        📍 Lat: ${lat} <br>
+                        📍 Lon: ${lon}
+                    `;
+                },
+                function(error) {
+                    watermark.innerHTML = `
+                        👤 Name: ${userName} <br>
+                        📅 Date: ${dateTime} <br>
+                        ❌ Location permission denied
+                    `;
+                }
+            );
+        } else {
+            watermark.innerHTML = `
+                👤 Name: ${userName} <br>
+                📅 Date: ${dateTime} <br>
+                ❌ Geolocation not supported
+            `;
+        }
+    }
+}
+</script>
+
+</body>
+</html>

@@ -75,6 +75,7 @@ while ($row = $result->fetch_assoc()) {
         "punch_in_image" => $row['punch_in_image'],
         "punch_out_image" => $row['punch_out_image'],
         "working_minutes" => $row['working_minutes'],
+        "total_break_minutes" => $row['total_break_minutes'],
         "created_at" => $row['created_at'],
     ];
 }

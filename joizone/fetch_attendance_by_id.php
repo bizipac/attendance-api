@@ -102,7 +102,7 @@ if ($row) {
 echo json_encode([
   "status" => true,
   "data" => [
-    "status" => "ABSENT"
+    "status" => "-"
   ]
 ]);
 exit;

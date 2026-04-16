@@ -7,7 +7,7 @@ header("Content-Type: application/json");
 
 include 'db.php';
 
-$sql = "SELECT * FROM users WHERE status = 'active' ORDER BY uid DESC";
+$sql = "SELECT * FROM users WHERE status = 'inactive' ORDER BY uid DESC";
 $res = mysqli_query($conn, $sql);
 
 $data = [];

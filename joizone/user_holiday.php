@@ -28,9 +28,15 @@ foreach ($data['records'] as $row) {
     $cid        = $row['cid'] ?? '';
     $uid        = $row['uid'] ?? '';
     $name       = $row['name'] ?? '';
-    $department = $row['department'] ?? '';
+    $department = $row['user_type'] ?? '';
     $office     = $row['office_name'] ?? '';
-    $status     = $row['status'] ?? 'HOLYDAY';
+    $status = strtoupper(trim($row['status'] ?? ''));
+
+if ($status == 'WO') {
+    $status = 'HOLYDAY';
+}
+
+
     $shiftStart = $row['shift_start'] ?? null;
     $shiftEnd   = $row['shift_end'] ?? null;
 
@@ -38,6 +44,8 @@ foreach ($data['records'] as $row) {
     $createdAtRaw = $row['roster_date'] ?? date('Y-m-d');
     $createdAt   = date('Y-m-d', strtotime($createdAtRaw));
     $updatedAt   = date('Y-m-d H:i:s');
+
+    //agr hum yha ek 
 
     // Basic validation
     if ($cid == '' || $uid == '') {
@@ -68,14 +76,14 @@ foreach ($data['records'] as $row) {
     ");
 
     if ($insert) {
-
+        //i want to shift update only monday
         // Update shift if provided
         if ($shiftStart && $shiftEnd) {
             mysqli_query($conn, "
                 UPDATE users SET
                 shift_start='$shiftStart',
                 shift_end='$shiftEnd',
-                updatedAt='$updatedAt'
+                updatedAt='$updatedAt' 
                 WHERE uid='$uid'
             ");
         }

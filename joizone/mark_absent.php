@@ -76,7 +76,7 @@ while ($u = mysqli_fetch_assoc($users)) {
         UPDATE attendance
         SET
           punch_out_time = '$autoPunchOutTime',
-          status = 'AUTO_PUNCH_OUT',
+          status = 'Present',
           punch_out_remark = 'Auto punch-out: You forgot to punch out'
         WHERE id = '{$row['id']}'
       ");
