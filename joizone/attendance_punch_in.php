@@ -40,17 +40,18 @@ $checkQuery = "
   WHERE uid='$uid' 
     AND cid='$cid'
     AND DATE(punch_in_time) = CURDATE()
+    AND punch_out_time IS NULL
 ";
 
 $check = mysqli_query($conn, $checkQuery);
-
 if (mysqli_num_rows($check) > 0) {
   echo json_encode([
     "status" => false,
-    "message" => "Already punched in please punch out"
+    "message" => "Already punched in. Please punch out first."
   ]);
   exit;
-}# 🚫 Check if user is on HOLIDAY today
+}
+# 🚫 Check if user is on HOLIDAY today
 $holidayCheckQuery = "
   SELECT id
   FROM attendance

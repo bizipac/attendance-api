@@ -1,6 +1,8 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// ✅ Hide errors (important for JSON)
+error_reporting(0);
+ini_set('display_errors', 0);
+ob_clean();
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -9,15 +11,22 @@ header("Content-Type: application/json");
 
 include "db.php";
 
-// Read JSON input
+// ✅ Helper function
+function sendResponse($status, $message, $success = 0, $failed = 0) {
+    echo json_encode([
+        "status"  => $status,
+        "message" => $message,
+        "success" => $success,
+        "failed"  => $failed
+    ]);
+    exit;
+}
+
+// ✅ Read JSON
 $data = json_decode(file_get_contents("php://input"), true);
 
 if (!isset($data['records']) || !is_array($data['records'])) {
-    echo json_encode([
-        "status" => false,
-        "message" => "No records received"
-    ]);
-    exit;
+    sendResponse(false, "No records received");
 }
 
 $success = 0;
@@ -27,39 +36,49 @@ foreach ($data['records'] as $row) {
 
     $cid        = $row['cid'] ?? '';
     $uid        = $row['uid'] ?? '';
-    $name       = $row['name'] ?? '';
+    $userid     = $row['userid'] ?? '';
     $department = $row['user_type'] ?? '';
     $office     = $row['office_name'] ?? '';
-    $status = strtoupper(trim($row['status'] ?? ''));
+    $status     = strtoupper(trim($row['status'] ?? ''));
 
-if ($status == 'WO') {
-    $status = 'HOLYDAY';
-}
+    // ✅ Only WO process
+    if ($status !== 'WO') {
+        continue;
+    }
 
+    $status = 'HOLIDAY';
 
-    $shiftStart = $row['shift_start'] ?? null;
-    $shiftEnd   = $row['shift_end'] ?? null;
+    // ✅ Shift conversion (safe)
+    $shiftStart = null;
+    $shiftEnd   = null;
 
-    // created_at from Flutter (ISO / date)
+    if (!empty($row['shift_start'])) {
+        $shiftStart = date("H:i", strtotime($row['shift_start']));
+    }
+
+    if (!empty($row['shift_end'])) {
+        $shiftEnd = date("H:i", strtotime($row['shift_end']));
+    }
+
+    // ✅ Date conversion (ISO safe)
     $createdAtRaw = $row['roster_date'] ?? date('Y-m-d');
-    $createdAt   = date('Y-m-d', strtotime($createdAtRaw));
-    $updatedAt   = date('Y-m-d H:i:s');
+    $createdAt = date('Y-m-d', strtotime(str_replace('T', ' ', $createdAtRaw)));
 
-    //agr hum yha ek 
+    // current timestamp
+    $updatedAt = date('Y-m-d H:i:s');
 
-    // Basic validation
+    // ✅ Validation
     if ($cid == '' || $uid == '') {
         $failed++;
         continue;
     }
 
-
-    // 🔁 Duplicate check (same user, same date)
+    // ✅ Check duplicate
     $check = mysqli_query($conn, "
         SELECT id 
         FROM attendance 
         WHERE uid='$uid' 
-        AND DATE(created_at)='$createdAt'
+        AND DATE(roster_date)='$createdAt'
     ");
 
     if (mysqli_num_rows($check) > 0) {
@@ -67,17 +86,27 @@ if ($status == 'WO') {
         continue;
     }
 
-    // ✅ Insert attendance
+    // ✅ Fetch name from users table
+    $userRes = mysqli_query($conn, "
+        SELECT name 
+        FROM users 
+        WHERE uid='$uid'
+    ");
+
+    $userData = mysqli_fetch_assoc($userRes);
+    $name = $userData['name'] ?? '';
+
+    // ✅ Insert attendance (FIXED mapping)
     $insert = mysqli_query($conn, "
         INSERT INTO attendance
-        (cid, uid, name, department, office_name, status, created_at,roster_date )
+        (cid, uid, name, department, office_name, status, created_at, roster_date)
         VALUES
-        ('$cid','$uid','$name','$department','$office','$status','$createdAt','$updatedAt')
+        ('$cid','$uid','$name','$department','$office','$status','$updatedAt','$createdAt')
     ");
 
     if ($insert) {
-        //i want to shift update only monday
-        // Update shift if provided
+
+        // ✅ Update shift ONLY for WO
         if ($shiftStart && $shiftEnd) {
             mysqli_query($conn, "
                 UPDATE users SET
@@ -94,11 +123,6 @@ if ($status == 'WO') {
     }
 }
 
-// Final response
-echo json_encode([
-    "status"  => true,
-    "message" => "Uploaded successfully",
-    "success" => $success,
-    "failed"  => $failed
-]);
+// ✅ Final response
+sendResponse(true, "Uploaded successfully", $success, $failed);
 ?>

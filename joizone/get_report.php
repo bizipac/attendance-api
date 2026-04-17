@@ -12,17 +12,26 @@ include "db.php";
 date_default_timezone_set('Asia/Kolkata');
 
 $fromDate = isset($_GET['from_date']) ? $_GET['from_date'] : null;
-$toDate = isset($_GET['to_date']) ? $_GET['to_date'] : null;
+$toDate   = isset($_GET['to_date'])   ? $_GET['to_date']   : null;
 
-$sql = "SELECT * FROM form_reports WHERE duplicate_from = 'no'";
+// ✅ JOIN users table
+$sql = "
+SELECT 
+    fr.*, 
+    u.city_name AS site_name   -- users table se
+FROM form_reports fr
+LEFT JOIN users u ON fr.uid = u.uid
+WHERE fr.duplicate_from = 'no'
+";
 
+// ✅ Date filter
 if ($fromDate && $toDate) {
-    $sql .= " AND report_date BETWEEN '$fromDate' AND '$toDate'";
+    $sql .= " AND fr.report_date BETWEEN '$fromDate' AND '$toDate'";
 } else {
-    $sql .= " AND DATE(created_at) = CURDATE()";
+    $sql .= " AND DATE(fr.created_at) = CURDATE()";
 }
 
-$sql .= " ORDER BY id DESC";
+$sql .= " ORDER BY fr.id DESC";
 
 $result = $conn->query($sql);
 
@@ -32,6 +41,7 @@ while ($row = $result->fetch_assoc()) {
 
     $report_id = $row['id'];
 
+    // 🔁 Images fetch (same as before)
     $imgQuery = "SELECT image_url FROM form_report_images WHERE report_id = '$report_id'";
     $imgResult = $conn->query($imgQuery);
 
@@ -42,9 +52,11 @@ while ($row = $result->fetch_assoc()) {
     }
 
     $row['image_urls'] = $images;
+
     $data[] = $row;
 }
 
+// ✅ Response
 echo json_encode([
     "status" => true,
     "data" => $data
